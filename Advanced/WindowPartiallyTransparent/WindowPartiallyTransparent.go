@@ -42,7 +42,7 @@ func main() {
 	// 置矩形圆角
 	obj1.SetRectRoundAngle(8, 8, 8, 8)
 
-	// 获取填充矩形, 绿色
+	// 获取填充矩形, 蓝色
 	obj2 := bkm.GetObjectObj(2)
 	// 置外间距, 相当于设置了位置和大小
 	obj2.SetMargin(30, height-250+50, 30, 30)
