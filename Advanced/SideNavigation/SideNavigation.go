@@ -14,7 +14,14 @@ import (
 
 var (
 	w *window.Window
+	// 主内容区布局元素, 所有页面都放在这里面
+	layoutContent *widget.LayoutEle
+	// 页面集合: 导航项文本 → 页面布局元素
+	pages map[string]*widget.LayoutEle
 )
+
+// 页面名称列表, 与侧边导航的子项文本一一对应
+var pageNames = []string{"首页", "系统设置", "日志管理", "用户列表", "角色管理", "权限设置", "数据备份", "数据恢复"}
 
 func main() {
 	// 初始化UI库
@@ -33,16 +40,15 @@ func main() {
 	createTree()
 
 	// 创建主内容区布局元素
-	layoutContent := widget.NewLayoutEle(0, 0, 0, 0, w.Handle)
+	layoutContent = widget.NewLayoutEle(0, 0, 0, 0, w.Handle)
 	layoutContent.SetPadding(4, 4, 4, 4)
 	// 宽度占用剩余空间
 	layoutContent.LayoutItem_SetWidth(xcc.Layout_Size_Weight, 1)
 	// 高度填充父
 	layoutContent.LayoutItem_SetHeight(xcc.Layout_Size_Fill, 0)
 
-	// 后续:
-	// 1.创建所有页面的布局元素到主内容区布局元素里, 只把首页的show(true), 其他的show(false)
-	// 2.点击导航项时, show对应页面的布局元素, 隐藏其他页面的布局元素, 然后主内容区布局元素.调整布局, 主内容区布局元素.刷新
+	// 创建所有页面, 点击导航项时切换页面
+	createPages()
 
 	w.Show(true)
 	a.Run()
@@ -134,6 +140,9 @@ func createTree() {
 	tree.AddEvent_Tree_Select(func(hEle int, nItemID int32, pbHandled *bool) int {
 		itemText := tree.GetItemText(nItemID, 0) // 获取选中项的文本
 
+		// 显示对应页面, 一级菜单(系统管理/用户管理/数据管理)没有对应页面, 只展开不切换
+		switchPage(itemText)
+
 		// 根据不同的导航项执行相应操作
 		switch itemText {
 		case "系统设置":
@@ -196,6 +205,50 @@ func addNavigationItems(tree *widget.Tree) {
 	// 数据管理子项
 	tree.InsertItemText("数据备份", dataIndex, xcc.XC_ID_LAST)
 	tree.InsertItemText("数据恢复", dataIndex, xcc.XC_ID_LAST)
+}
+
+// 创建所有页面, 默认只显示首页.
+// 实际项目中把每个页面的控件创建到对应的页面布局元素里即可.
+func createPages() {
+	pages = make(map[string]*widget.LayoutEle, len(pageNames))
+	for _, name := range pageNames {
+		pages[name] = newPage(name)
+	}
+	// 默认显示首页
+	pages[pageNames[0]].Show(true)
+}
+
+// 创建一个页面: 一个填满主内容区的布局元素, 中间放着页面名称.
+func newPage(title string) *widget.LayoutEle {
+	page := widget.NewLayoutEle(0, 0, 0, 0, layoutContent.Handle)
+	page.EnableLayout(true)
+	// 页面内容水平垂直居中
+	page.SetAlignH(xcc.Layout_Align_Center)
+	page.SetAlignV(xcc.Layout_Align_Center)
+	// 宽高都填充父元素(主内容区)
+	page.LayoutItem_SetWidth(xcc.Layout_Size_Fill, 0)
+	page.LayoutItem_SetHeight(xcc.Layout_Size_Fill, 0)
+
+	// 页面内容, 宽度自适应文本
+	widget.NewShapeText(0, 0, 0, 30, title, page.Handle).LayoutItem_SetWidth(xcc.Layout_Size_Auto, -1)
+
+	// 创建后先隐藏
+	page.Show(false)
+	return page
+}
+
+// 显示指定页面, 隐藏其他页面, 没有对应页面时返回false.
+func switchPage(name string) bool {
+	if _, ok := pages[name]; !ok {
+		return false
+	}
+	for text, p := range pages {
+		p.Show(text == name)
+	}
+	// 布局项的显隐变更后需要调整布局并重绘
+	layoutContent.AdjustLayout()
+	layoutContent.Redraw(false)
+	return true
 }
 
 const (
