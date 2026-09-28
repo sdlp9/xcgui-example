@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"time"
 
 	"github.com/twgh/xcgui/app"
 	"github.com/twgh/xcgui/common"
@@ -34,7 +33,6 @@ func main() {
 	}
 
 	// 设置按钮鼠标光标
-	rand.Seed(time.Now().UnixNano())
 	btn := widget.NewButton(50, 50, 150, 40, "改变按钮鼠标光标", w.Handle)
 
 	btn.AddEvent_BnClick(func(hEle int, pbHandled *bool) int {
