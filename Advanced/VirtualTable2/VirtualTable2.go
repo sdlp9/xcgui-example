@@ -1,4 +1,4 @@
-// 虚表排序.
+// 虚表排序
 package main
 
 import (
@@ -19,7 +19,7 @@ var (
 
 	// 虚表数据源
 	listItems []*listItem
-	// 排序状态 (0: 升序, 1: 降序)
+	// 排序状态 (0: 升序, 1: 降序, -1: 尚未排序过, 第一次点击表头不排序)
 	sortState = -1
 	// 保护数据访问的读写锁
 	dataMutex sync.RWMutex
@@ -128,22 +128,30 @@ func onListTempCreateEnd(hEle int, pItem *xc.List_Item_, nFlag int32, pbHandled 
 
 // 列表头项点击事件, 处理排序
 func onListHeaderClick(hEle int, iItem int32, pbHandled *bool) int {
-	if iItem == 0 && xc.XC_GetProperty(hEle, "正在排序") != "1" { // 只对第一列排序
-		if sortState == -1 { // 处理第一次点击表头, 第一次是不需要排序的, 本来就是升序
-			sortState = 0
-			return 0
-		}
-
-		xc.XC_SetProperty(hEle, "正在排序", "1")
-		go toggleSort() // 在协程里排序更好, 因数据量大
+	if iItem != 0 { // 只对第一列排序
+		return 0
 	}
+	// 上一次排序还没完成时不再触发, 排序完成后 toggleSort 里会把它置回 "0"
+	if list.GetProperty("正在排序") == "1" {
+		return 0
+	}
+
+	dataMutex.Lock()
+	if sortState == -1 { // 处理第一次点击表头, 第一次是不需要排序的, 本来就是升序
+		sortState = 0
+		dataMutex.Unlock()
+		return 0
+	}
+	dataMutex.Unlock()
+
+	list.SetProperty("正在排序", "1")
+	go toggleSort() // 在协程里排序更好, 因数据量大
 	return 0
 }
 
 // 切换排序状态
 func toggleSort() {
 	dataMutex.Lock()
-	defer dataMutex.Unlock()
 
 	// 切换排序状态
 	sortState = (sortState + 1) % 2
@@ -159,6 +167,10 @@ func toggleSort() {
 			return listItems[i].Index > listItems[j].Index
 		})
 	}
+	// 这里必须先解锁再调用UI线程: XC_CallUT 是阻塞的, 它要等UI线程执行完回调才返回,
+	// 而 RefreshData 在UI线程触发的列表项模板创建事件里需要对数据加读锁,
+	// 如果这时还持有写锁, UI线程和本协程就会互相等待, 程序直接卡死.
+	dataMutex.Unlock()
 
 	xc.XC_CallUT(func() {
 		// 刷新列表数据
