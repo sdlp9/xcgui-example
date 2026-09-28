@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/twgh/xcgui/app"
 	"github.com/twgh/xcgui/wapi"
@@ -21,8 +20,6 @@ import (
 const prePath = "Advanced/TrayIcon2/"
 
 func main() {
-	rand.Seed(time.Now().Unix())
-
 	// 1.初始化UI库
 	app.InitOrExit()
 	a := app.New(true)
