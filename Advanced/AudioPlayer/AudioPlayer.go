@@ -225,6 +225,9 @@ func (m *MainWindow) playAudio() {
 	// 获取音频长度
 	length, err := m.ap.GetLength()
 	fmt.Printf("音频长度: %d毫秒, %v\n", length, err)
+	if length <= 0 { // 部分音频可能获取不到长度, 防止下面计算进度时除零崩溃
+		length = 1
+	}
 
 	// 获取播放进度, 等待播放完毕
 	go func() {
