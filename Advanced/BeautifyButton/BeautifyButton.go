@@ -131,10 +131,11 @@ func (w *BeautifyButton) SetThemeColor(color uint32) *BeautifyButton {
 			uint8(minInt(int(g)+30, 255)),
 			uint8(minInt(int(b)+30, 255)),
 			a)
+		// 按下时颜色加深, 用 maxInt 防止减出负数, 用 minInt 的话结果恒为 0, 按下时会变成纯黑
 		w.pressedBgColor = xc.RGBA(
-			uint8(minInt(int(r)-30, 0)),
-			uint8(minInt(int(g)-30, 0)),
-			uint8(minInt(int(b)-30, 0)),
+			uint8(maxInt(int(r)-30, 0)),
+			uint8(maxInt(int(g)-30, 0)),
+			uint8(maxInt(int(b)-30, 0)),
 			a)
 		w.disabledBgColor = xc.RGBA(
 			uint8((int(r)+240)/2),
