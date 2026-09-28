@@ -28,3 +28,4 @@ scripts/
 
 # File
 !webview/AutomaticInstallWebView2Runtime/MicrosoftEdgeWebview2Setup.exe
+.zcodeignore
